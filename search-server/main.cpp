@@ -145,6 +145,17 @@ private:
         return query_;
     }
 
+    // fixed and add IDF finder function
+    // не вижу смысла в добавлении данной функции:
+    // если оставить так как сделано сейчас, то у нас просто увеличивается количество строчек
+    // если IDF определять так: id_relevance[id] += TF * IDF_Finder(plus_word)
+    // то для одного плюс-слова мы будем рассчитывать IDF несколько раз, и увеличим время выполнения программы
+    // могли бы Вы пояснить, чем становится лучше код с добавлением данной функции?
+    // заранее спасибо!
+    double IDF_Finder(const string& word)
+    {
+        return log(1.0 * document_count_ / documents_.at(word).size());
+    }
 
     // 3 тут надо получать документы все и подавать 2 множества
     vector<Document> FindAllDocuments(const Query& query_words) const {
@@ -155,10 +166,16 @@ private:
         for (const string& plus_word : query_words.plus_words)
             if (documents_.count(plus_word))
             {
-                double IDF = log(1.0 * document_count_ / documents_.at(plus_word).size());
+                //double IDF = log(1.0 * document_count_ / documents_.at(plus_word).size());
+
+                // либо так
+                double IDF = IDF_Finder(plus_word);
                 for (const auto& [id, TF] : documents_.at(plus_word))
                 {
                     id_relevance[id] += TF * IDF;
+
+                    // либо так:
+                    //id_relevance[id] += TF * IDF_Finder(plus_word);
                 }
             }
 
