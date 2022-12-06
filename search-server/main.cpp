@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <numeric>
 
 using namespace std;
 
@@ -82,15 +83,7 @@ public:
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, key_mapper);
 
-        sort(matched_documents.begin(), matched_documents.end(),
-            [](const Document& lhs, const Document& rhs) {
-                if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
-                    return lhs.rating > rhs.rating;
-                }
-                else {
-                    return lhs.relevance > rhs.relevance;
-                }
-            });
+        sort(matched_documents.begin(), matched_documents.end(), CheckDivergence);
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
         }
@@ -146,6 +139,15 @@ private:
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
 
+    static bool CheckDivergence(const Document& lhs, const Document& rhs) {
+        if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+            return lhs.rating > rhs.rating;
+        }
+        else {
+            return lhs.relevance > rhs.relevance;
+        }
+    }
+
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
     }
@@ -164,10 +166,8 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
+
         return rating_sum / static_cast<int>(ratings.size());
     }
 
