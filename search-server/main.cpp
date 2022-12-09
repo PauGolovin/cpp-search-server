@@ -13,6 +13,7 @@ using namespace std;
 
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double Divergence = 1e-6;
 
 // считываем строку
 string ReadLine() {
@@ -148,7 +149,7 @@ private:
 
     // Проверка пограшности в релевантности
     static bool CheckDivergence(const Document& lhs, const Document& rhs) {
-        if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+        if (abs(lhs.relevance - rhs.relevance) < Divergence) {
             return lhs.rating > rhs.rating;
         }
         else {
@@ -418,22 +419,43 @@ void TestRelevanceRating() {
     ASSERT_EQUAL(found_docs[0].rating, 2u);
     ASSERT_EQUAL(found_docs[1].rating, 3u);
     ASSERT_EQUAL(found_docs[2].rating, 4u);
-    // тест релевантности
+    // тест сортировки по релевантности
     for (int i = 0; i < found_docs.size() - 1; ++i)
         ASSERT_HINT(found_docs[i].relevance > found_docs[i + 1].relevance,
             "Docs must be sorted by relevance"s);
+    // тест релевантности
+    double relevance0 = log(3.0) * 0.25 + log(1.5) * 0.25;
+    double relevance1 = log(1.5) * 0.25;
+    double relevance2 = 0;
+    ASSERT_EQUAL_HINT(found_docs[0].relevance, relevance0, "Incorrect relevance calculating."s);
+    ASSERT_EQUAL_HINT(found_docs[1].relevance, relevance1, "Incorrect relevance calculating."s);
+    ASSERT_EQUAL_HINT(found_docs[2].relevance, relevance2, "Incorrect relevance calculating."s);
 }
 // тест функции-предиката и нахождения по статусу
 void TestPredicateStatus() {
     SearchServer server;
     server.AddDocument(42, "cat in the city"s, DocumentStatus::ACTUAL, { 1, 2, 3 });
-    server.AddDocument(43, "dog in the city"s, DocumentStatus::ACTUAL, { 2, 3, 4 });
+    server.AddDocument(43, "dog in the city"s, DocumentStatus::BANNED, { 2, 3, 4 });
     server.AddDocument(44, "dog in the park"s, DocumentStatus::REMOVED, { 3, 4, 5 });
+    server.AddDocument(46, "dog in the park"s, DocumentStatus::IRRELEVANT, { 3, 4, 5 });
     // тест поиска по статусу
     {
-        const auto found_docs = server.FindTopDocuments("cat in the city"s, DocumentStatus::REMOVED);
-        ASSERT_EQUAL(found_docs.size(), 1u);
-        ASSERT_EQUAL_HINT(found_docs[0].id, 44u, "Docs must be sorted by status"s);
+        // поиск REMOVED
+        const auto found_docs_REMOVED = server.FindTopDocuments("cat in the city"s, DocumentStatus::REMOVED);
+        ASSERT_EQUAL(found_docs_REMOVED.size(), 1u);
+        ASSERT_EQUAL_HINT(found_docs_REMOVED[0].id, 44u, "Docs must be sorted by status"s);
+        // поиск ACTUAL
+        const auto found_docs_ACTUAL = server.FindTopDocuments("cat in the city"s, DocumentStatus::ACTUAL);
+        ASSERT_EQUAL(found_docs_ACTUAL.size(), 1u);
+        ASSERT_EQUAL_HINT(found_docs_ACTUAL[0].id, 42u, "Docs must be sorted by status"s);
+        // поиск BANNED
+        const auto found_docs_BANNED = server.FindTopDocuments("cat in the city"s, DocumentStatus::BANNED);
+        ASSERT_EQUAL(found_docs_BANNED.size(), 1u);
+        ASSERT_EQUAL_HINT(found_docs_BANNED[0].id, 43u, "Docs must be sorted by status"s);
+        // поиск IRRELEVANT
+        const auto found_docs_IRRELEVANT = server.FindTopDocuments("cat in the city"s, DocumentStatus::IRRELEVANT);
+        ASSERT_EQUAL(found_docs_IRRELEVANT.size(), 1u);
+        ASSERT_EQUAL_HINT(found_docs_IRRELEVANT[0].id, 46u, "Docs must be sorted by status"s);
     }
     // тест предиката 1
     {
