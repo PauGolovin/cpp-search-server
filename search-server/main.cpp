@@ -10,6 +10,7 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double Divergence = 1e-6;
 
 string ReadLine() {
     string s;
@@ -85,7 +86,9 @@ public:
     {
         for (const string& word : stop_words_)
             if (!IsValidWord(word))
-                throw invalid_argument("Unacceptable symbols in stop words."s);
+            {
+                throw invalid_argument("Unacceptable symbols in stop word \""s + word + "\"."s);
+            }
     }
 
     explicit SearchServer(const string& stop_words_text)
@@ -95,12 +98,15 @@ public:
 
     void AddDocument(int document_id, const string& document, DocumentStatus status,
         const vector<int>& ratings) {
-        if (document_id < 0 || documents_.count(document_id))
-            throw invalid_argument("Unacceptable id."s);
+        if (document_id < 0)
+        {
+            throw invalid_argument("Unacceptable id. Id must be greater than zero."s);
+        }
+        if (documents_.count(document_id))
+        {
+            throw invalid_argument("Unacceptable id. This id is already used."s);
+        }
         const vector<string> words = SplitIntoWordsNoStop(document);
-        for (const string& word : words)
-            if (!IsValidWord(word))
-                throw invalid_argument("Unacceptable symbols in text."s);
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
             word_to_document_freqs_[word][document_id] += inv_word_count;
@@ -112,13 +118,11 @@ public:
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
         const Query query = ParseQuery(raw_query);
-        if (!CheckQueryWords(query))
-            throw invalid_argument("Unacceptable query."s);
         auto result = FindAllDocuments(query, document_predicate);
 
         sort(result.begin(), result.end(),
             [](const Document& lhs, const Document& rhs) {
-                if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+                if (abs(lhs.relevance - rhs.relevance) < Divergence;) {
                     return lhs.rating > rhs.rating;
                 }
                 else {
@@ -148,8 +152,6 @@ public:
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
         const Query query = ParseQuery(raw_query);
-        if (!CheckQueryWords(query))
-            throw invalid_argument("Unacceptable query."s);
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -174,9 +176,9 @@ public:
 
     int GetDocumentId(int index) const {
         if (index < 0 || index >= GetDocumentCount())
-            throw out_of_range("Unacceptable index."s);
+            throw out_of_range("Unacceptable index. Index is out of range."s);
         else
-            return index_id.at(index);
+            return index_id[index];
     }
 
 private:
@@ -187,7 +189,7 @@ private:
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
-    map<size_t, int> index_id; // index and id
+    vector<int> index_id; // index and id
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
@@ -205,6 +207,9 @@ private:
     vector<string> SplitIntoWordsNoStop(const string& text) const {
         vector<string> words;
         for (const string& word : SplitIntoWords(text)) {
+            if (!IsValidWord(word)) {
+                throw invalid_argument("Unacceptable symbols in word \""s + word + "\"."s);
+            }
             if (!IsStopWord(word)) {
                 words.push_back(word);
             }
@@ -216,10 +221,8 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
+
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -247,6 +250,16 @@ private:
     Query ParseQuery(const string& text) const {
         Query query;
         for (const string& word : SplitIntoWords(text)) {
+            if (!IsValidWord(word)) {
+                throw invalid_argument("Unacceptable symbols in word \""s + word + "\"."s);
+            }
+            if (word[0] == '-' && word[1] == '-') {
+                throw invalid_argument("Error in the word \""s + word + 
+                    "\". You should use just one minus to mark minus-word."s);
+            }
+            if (word == "-"s) {
+                throw invalid_argument("Unacceptable word \""s + word + "\"."s);
+            }
             const QueryWord query_word = ParseQueryWord(word);
             if (!query_word.is_stop) {
                 if (query_word.is_minus) {
@@ -258,17 +271,6 @@ private:
             }
         }
         return query;
-    }
-
-    // check words of query
-    static bool CheckQueryWords(const Query& query) {
-        for (const string& word : query.plus_words)
-            if (!IsValidWord(word))
-                return false;
-        for (const string& word : query.minus_words)
-            if (!IsValidWord(word) || word == ""s || word[0] == '-')
-                return false;
-        return true;
     }
 
     // Existence required
