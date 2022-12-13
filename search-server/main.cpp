@@ -10,7 +10,7 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
-const double Divergence = 1e-6;
+const double DIVERGENCE_FOR_RELEVANCE = 1e-6;
 
 string ReadLine() {
     string s;
@@ -122,7 +122,7 @@ public:
 
         sort(result.begin(), result.end(),
             [](const Document& lhs, const Document& rhs) {
-                if (abs(lhs.relevance - rhs.relevance) < Divergence;) {
+                if (abs(lhs.relevance - rhs.relevance) < DIVERGENCE_FOR_RELEVANCE;) {
                     return lhs.rating > rhs.rating;
                 }
                 else {
@@ -175,10 +175,7 @@ public:
     }
 
     int GetDocumentId(int index) const {
-        if (index < 0 || index >= GetDocumentCount())
-            throw out_of_range("Unacceptable index. Index is out of range."s);
-        else
-            return index_id[index];
+        return index_id.at(index);
     }
 
 private:
