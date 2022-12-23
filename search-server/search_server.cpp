@@ -1,9 +1,6 @@
 //Вставьте сюда своё решение из урока «Очередь запросов» темы «Стек, очередь, дек».‎
 #include "search_server.h"
 
-// ALARM!!!!!! Вот хочу я значит писать как надо: std::string str = "something"s; но без using namespace std; не могу писать в конце литеру s
-// памагити с этим вопросом, пожалуйста
-
 
 SearchServer::SearchServer(const std::string& stop_words_text)
         : SearchServer(SplitIntoWords(stop_words_text))
@@ -65,6 +62,45 @@ std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument
     }
     std::tuple<std::vector<std::string>, DocumentStatus> result = { matched_words, documents_.at(document_id).status };
     return result;
+}
+
+std::vector <int> ::iterator SearchServer::begin(){
+    return index_id.begin();
+}
+
+std::vector <int> ::iterator SearchServer::end(){
+    return index_id.end();
+}
+
+const std::map<std::string, double> SearchServer::GetWordFrequencies(int document_id) const {
+    std::map<std::string, double> result;
+    if (find(index_id.begin(), index_id.end(), document_id) == index_id.end()) {
+        return result;
+    }
+    for (const auto& [word, id_TF] : word_to_document_freqs_) {
+        if (word_to_document_freqs_.at(word).count(document_id)) {
+            result[word] = word_to_document_freqs_.at(word).at(document_id);
+        }
+    }
+    return result;
+}
+
+void SearchServer::RemoveDocument(int document_id) {
+    auto it = find(index_id.begin(), index_id.end(), document_id);
+    if (it == index_id.end()) {
+        return;
+    }
+    index_id.erase(it);
+    documents_.erase(document_id);
+    for (const auto& [word, map] : word_to_document_freqs_) {
+        if (word_to_document_freqs_.at(word).count(document_id)){
+            word_to_document_freqs_.at(word).erase(document_id);
+            /*
+            if (word_to_document_freqs_.at(word).empty()) {
+                word_to_document_freqs_.erase(word);
+            }*/
+        }
+    }
 }
 
 bool SearchServer::IsStopWord(const std::string& word) const {

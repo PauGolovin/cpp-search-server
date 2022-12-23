@@ -16,7 +16,7 @@ const double DIVERGENCE_FOR_RELEVANCE = 1e-6;
 
 class SearchServer {
 public:
-    // ���������
+    // шаблонная
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
         : stop_words_(MakeUniqueNonEmptyStrings(stop_words))  // Extract non-empty stop words
@@ -32,7 +32,7 @@ public:
 
     void AddDocument(int document_id, const std::string& document, DocumentStatus status,
         const std::vector<int>& ratings);
-    // ���������
+    // шаблонная
     template <typename DocumentPredicate>
     std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentPredicate document_predicate) const {
         const Query query = ParseQuery(raw_query);
@@ -61,9 +61,15 @@ public:
 
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
 
-    int GetDocumentId(int index) const {
-        return index_id.at(index);
-    }
+    std::vector <int> ::iterator begin();
+
+    std::vector <int> ::iterator end();
+
+    // не совсем понял зачем возвращать ссылку на то, что создаем тут
+    // поэтому сделал возврат значения, если это не верно, поправьте и прокомментируйте, пожалуйста
+    const std::map<std::string, double> GetWordFrequencies(int document_id) const;
+
+    void RemoveDocument(int document_id);
 
 private:
     struct DocumentData {
@@ -101,7 +107,7 @@ private:
     // Existence required
     double ComputeWordInverseDocumentFreq(const std::string& word) const;
 
-    // ���������
+    // шаблонная
     template <typename DocumentPredicate>
     std::vector<Document> FindAllDocuments(const Query& query,
         DocumentPredicate document_predicate) const {

@@ -7,6 +7,7 @@
 #include "paginator.h"
 #include "read_input_functions.h"
 #include "request_queue.h"
+#include "remove_duplicates.h"
 
 using namespace std;
 //вывод вектора документов 

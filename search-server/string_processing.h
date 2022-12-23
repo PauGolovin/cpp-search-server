@@ -5,7 +5,7 @@
 
 std::vector<std::string> SplitIntoWords(const std::string& text);
 
-// шаблонная
+// С€Р°Р±Р»РѕРЅРЅР°СЏ
 template <typename StringContainer>
 std::set<std::string> MakeUniqueNonEmptyStrings(const StringContainer& strings) {
     std::set<std::string> non_empty_strings;
