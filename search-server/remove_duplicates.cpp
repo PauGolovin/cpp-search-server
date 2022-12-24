@@ -9,13 +9,21 @@ void RemoveDuplicates(SearchServer& search_server) {
         for (const auto& [word, TF] : words) {
             docs_words.insert(word);
         }
+        // если не существует, то просто добавляем
         if (!id_words.count(docs_words)) {
             id_words[docs_words] = id;
         }
+        // условие, что остается документ с меньшим id
+        else if (id_words.at(docs_words) > id) {
+            id_to_remove.push_back(id_words.at(docs_words));
+            id_words[docs_words] = id;
+        }
+        // если оба из условий не удовлетворены, то удаляем этот документ
         else {
             id_to_remove.push_back(id);
         }
     }
+    // удаляем дубликаты
     for (const int id : id_to_remove) {
         search_server.RemoveDocument(id);
     }
