@@ -8,7 +8,7 @@ SearchServer::SearchServer(const std::string& stop_words_text)
     : SearchServer(SplitIntoWords(std::string_view{ stop_words_text }))
 {
 }
-void SearchServer::AddDocument(int document_id, std::string_view document, DocumentStatus status, 
+void SearchServer::AddDocument(int document_id, std::string_view document, DocumentStatus status,
     const std::vector<int>& ratings) {
     if (document_id < 0)
     {
@@ -30,7 +30,7 @@ void SearchServer::AddDocument(int document_id, std::string_view document, Docum
         word_to_document_freqs_[server_words_.at(str_word).second][document_id] += inv_word_count;
         id_words_freqs_[document_id][server_words_.at(str_word).second] += inv_word_count;
     }
-    documents_.emplace(document_id, DocumentData{ ComputeAverageRating(ratings), status });
+    documents_.emplace(document_id, DocumentData{ ComputeAverageRating(ratings), status, document });
     index_id_.insert(document_id);
 }
 
@@ -49,7 +49,9 @@ int SearchServer::GetDocumentCount() const {
     return documents_.size();
 }
 
-std::tuple<std::vector<std::string_view>, DocumentStatus> SearchServer::MatchDocument(std::string_view raw_query, 
+using MatchDocument_Type = std::tuple<std::vector<std::string_view>, DocumentStatus>;
+
+MatchDocument_Type SearchServer::MatchDocument(std::string_view raw_query,
     int document_id) const {
     //-------------------------------------------
     const Query query = ParseQuery(raw_query, false);
@@ -68,17 +70,17 @@ std::tuple<std::vector<std::string_view>, DocumentStatus> SearchServer::MatchDoc
             break;
         }
     }
-    std::tuple<std::vector<std::string_view>, DocumentStatus> result = { matched_words, documents_.at(document_id).status };
+    MatchDocument_Type result = { matched_words, documents_.at(document_id).status };
     return result;
 }
 
-std::tuple<std::vector<std::string_view>, DocumentStatus> SearchServer::MatchDocument(const std::execution::sequenced_policy&,
+MatchDocument_Type SearchServer::MatchDocument(const std::execution::sequenced_policy&,
     std::string_view raw_query, int document_id) const {
     //-------------------------------------------
     return MatchDocument(raw_query, document_id);
 }
 
-std::tuple<std::vector<std::string_view>, DocumentStatus> SearchServer::MatchDocument(const std::execution::parallel_policy&,
+MatchDocument_Type SearchServer::MatchDocument(const std::execution::parallel_policy&,
     std::string_view raw_query, int document_id) const {
     //-------------------------------------------
     const Query query = ParseQuery(raw_query, true);
@@ -213,7 +215,7 @@ SearchServer::Query SearchServer::ParseQuery(std::string_view text, bool skip_so
     SearchServer::Query query;
     for (std::string_view word : SplitIntoWords(text)) {
         if (!IsValidWord(word)) {
-            throw std::invalid_argument("Unacceptable symbols in word \"" + std::string{word} + "\".");
+            throw std::invalid_argument("Unacceptable symbols in word \"" + std::string{ word } + "\".");
         }
         if (word[0] == '-' && word[1] == '-') {
             throw std::invalid_argument("Error in the word \"" + std::string{ word } +
