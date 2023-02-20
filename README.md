@@ -2,6 +2,8 @@
 
 ## **Overview**
 
+This is educational project completed during the course of training at Yandex Practicum.
+
 Search Server is a keyword search system that implements the following functionality:
 * Ranking of documents by TF-IDF
 * Ability to perform document search in multithreaded mode
@@ -79,3 +81,9 @@ _____
 For the Search Server, the **Paginator** class is implemented and defined in the file *paginator.h*.
 
 This class is initialized with iterators of the beginning and end of the container to be paginated, as well as the number of results per page. **Paginator::GetPages()** method returns a container of containers with paginated results.
+
+_____
+______
+## **System requirements**
+
+C++ compiler supporting C++17 standard or later.
