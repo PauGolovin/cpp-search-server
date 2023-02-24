@@ -13,6 +13,15 @@ Search Server is a keyword search system that implements the following functiona
 _____
 ______
 ## **Description**
+
+### **Principle of operation**
+
+Creating an instance of the SearchServer class. The constructor is passed a string with stop words separated by spaces. A standard container can be passed sequentially (with subsequent access to the element with the possibility of using it in a for-range loop).
+
+The AddDocument method adds documents to be searched. The method passes the document id, status, rating, and the document itself in string format.
+
+The FindTopDocuments method returns vector documents according to the passed nutrients. The results are sorted by the TF-IDF statistic. Additional filtering of documents by ID, status and rating is possible. Implementation method in both single-threaded and multi-threaded versions.
+____
 ### **Input Data**
 
 Search Server is created using a constructor whose parameter is a set of stop words passed as string, string_view, or a string container:
