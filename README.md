@@ -2,8 +2,6 @@
 
 ## **Overview**
 
-This is educational project completed during the course of training at Yandex Practicum.
-
 Search Server is a keyword search system that implements the following functionality:
 * Ranking of documents by TF-IDF
 * Ability to perform document search in multithreaded mode
